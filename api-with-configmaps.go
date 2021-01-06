@@ -84,22 +84,4 @@ func main() {
 	// to finalize based on context cancellation.
 	log.Println("shutting down")
 	os.Exit(0)
-
-	//
-	// Setup our resource handlers
-	//
-	/*
-			router.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
-				docsHandler(w, r)
-			})
-			router.HandleFunc("/docs/{docId}", func(w http.ResponseWriter, r *http.Request) {
-				docHandler(w, r)
-			})
-			router.HandleFunc("/OAS", func(w http.ResponseWriter, r *http.Request) {
-				oasHandler(w, r)
-			})
-
-			fmt.Println("Listening")
-		    fmt.Println(http.ListenAndServe(":8080", nil))
-	*/
 }
