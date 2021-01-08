@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -31,10 +32,19 @@ func docsHandler(w http.ResponseWriter, r *http.Request) {
 func oasHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inside oasHandler")
 
-	log.Println("example_prop_1", os.Getenv("example_prop_1"))
+	log.Println("some_var", os.Getenv("some_var"))
 	log.Println("example_prop_2", os.Getenv("example_prop_2"))
 	log.Println("foo", os.Getenv("foo"))
 	log.Println("bar", os.Getenv("bar"))
+
+	var jsonmap map[string]string
+
+	x := os.Getenv("DOCS_JSON")
+
+	// Unmarshal or Decode the JSON to the interface.
+	json.Unmarshal([]byte(x), &jsonmap)
+	log.Println("Doc1", jsonmap["doc1"])
+	log.Println("Doc2", jsonmap["doc2"])
 }
 
 func main() {
