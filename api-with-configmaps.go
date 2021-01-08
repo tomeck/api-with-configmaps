@@ -33,6 +33,8 @@ func oasHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("example_prop_1", os.Getenv("example_prop_1"))
 	log.Println("example_prop_2", os.Getenv("example_prop_2"))
+	log.Println("foo", os.Getenv("foo"))
+	log.Println("bar", os.Getenv("bar"))
 }
 
 func main() {
