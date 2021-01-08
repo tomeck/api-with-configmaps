@@ -30,6 +30,9 @@ func docsHandler(w http.ResponseWriter, r *http.Request) {
 // docsHandler Fetch the URI of the OpenAPISpec for this tenant
 func oasHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inside oasHandler")
+
+	log.Println("example_prop_1", os.Getenv("example_prop_1"))
+	log.Println("example_prop_2", os.Getenv("example_prop_2"))
 }
 
 func main() {
