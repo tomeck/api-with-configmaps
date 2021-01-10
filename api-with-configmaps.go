@@ -31,27 +31,34 @@ func docHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Requested docId %s\n", docID)
 
+	// Poor-man's search
+	idx := -1
+	for i := range gDocuments {
+		if gDocuments[i].ID == docID {
+			idx = i
+		}
+	}
+
+	// If we find the doc w/specified ID, marshal to JSON and return
+	if idx >= 0 && idx < len(gDocuments) {
+		// Marshal the document to JSON
+		js, err := json.Marshal(gDocuments[idx])
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Return the marshaled (JSON-ified) list of docs
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(js))
+	} else {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	}
 }
 
 // docsHandler Get a list of all available documents from this tenant
 func docsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inside docsHandler")
-
-	// Fetch array of documents from ENV (which came from ConfigMap)
-	//docsJSON := os.Getenv("DOCS_JSON")
-
-	/* Here's code if we need to treat the JSON as such
-	var documents []Document
-	json.Unmarshal([]byte(docsJSON), &documents)
-
-	// log.Println("Doc1", documents[0])
-	// log.Println("Doc2", documents[1])
-	js, err := json.Marshal(profile)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	*/
 
 	// Marshal the global in-memory database of documebts
 	js, err := json.Marshal(gDocuments)
@@ -60,6 +67,7 @@ func docsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Return the marshaled (JSON-ified) list of docs
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(js))
 }
@@ -76,6 +84,8 @@ func oasHandler(w http.ResponseWriter, r *http.Request) {
 	// var jsonmap map[string]interface{}
 }
 
+// loadDocs - Load the list of documents supported by this tenant
+// from ENV, which was populated from ConfigMap
 func loadDocs() {
 
 	// Fetch array of documents from ENV (which came from ConfigMap)
