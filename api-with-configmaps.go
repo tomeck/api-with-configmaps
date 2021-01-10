@@ -63,10 +63,10 @@ func fetchDocHandler(w http.ResponseWriter, r *http.Request) {
 				html := markdown.ToHTML(contents, nil, nil)
 
 				w.Write([]byte(html))
+			} else {
+				w.Write([]byte(contents))
 			}
 			// END TESTING
-
-			//w.Write([]byte(contents))
 		} else {
 			log.Println("fetchDocHandler ERROR, ", err)
 
