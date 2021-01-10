@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
+	"github.com/gomarkdown/markdown"
 	"github.com/gorilla/mux"
 )
 
@@ -22,7 +25,60 @@ type Document struct {
 	Tags   string `json:"tags"`
 }
 
-// docHandler Fetch a single document from this tenant
+// downloadDoc - download the specified document's contents, and return as byte array
+func downloadDoc(doc Document) ([]byte, error) {
+
+	// Get the http object
+	resp, err := http.Get(doc.URI)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the contents of its body
+	body, err := ioutil.ReadAll(resp.Body)
+
+	return body, err
+}
+
+// fectchDocHandler Fetch a the content of a specified document from this tenant
+func fetchDocHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Inside fetchDocHandler")
+
+	vars := mux.Vars(r)
+	docID := vars["docId"]
+
+	log.Printf("Requested docId %s\n", docID)
+
+	doc := docByID(docID)
+
+	// If we find the doc w/specified ID, marshal to JSON and return
+	if doc != nil {
+
+		contents, err := downloadDoc(*doc)
+
+		if err == nil {
+
+			// JTE TESTING - render any markdown doc's to HTML
+			if strings.ToLower(doc.Format) == "markdown" {
+				html := markdown.ToHTML(contents, nil, nil)
+
+				w.Write([]byte(html))
+			}
+			// END TESTING
+
+			//w.Write([]byte(contents))
+		} else {
+			log.Println("fetchDocHandler ERROR, ", err)
+
+			// TODO - properly handle the error
+			http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		}
+	} else {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	}
+}
+
+// docHandler Get a single document object from this tenant
 func docHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inside docHandler")
 
@@ -31,18 +87,12 @@ func docHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("Requested docId %s\n", docID)
 
-	// Poor-man's search
-	idx := -1
-	for i := range gDocuments {
-		if gDocuments[i].ID == docID {
-			idx = i
-		}
-	}
+	doc := docByID(docID)
 
 	// If we find the doc w/specified ID, marshal to JSON and return
-	if idx >= 0 && idx < len(gDocuments) {
+	if doc != nil {
 		// Marshal the document to JSON
-		js, err := json.Marshal(gDocuments[idx])
+		js, err := json.Marshal(doc)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -72,18 +122,6 @@ func docsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(js))
 }
 
-// docsHandler Fetch the URI of the OpenAPISpec for this tenant
-func oasHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Inside oasHandler")
-
-	// // log.Println("some_var", os.Getenv("some_var"))
-	// // log.Println("example_prop_2", os.Getenv("example_prop_2"))
-	// // log.Println("foo", os.Getenv("foo"))
-	// // log.Println("bar", os.Getenv("bar"))
-
-	// var jsonmap map[string]interface{}
-}
-
 // loadDocs - Load the list of documents supported by this tenant
 // from ENV, which was populated from ConfigMap
 func loadDocs() {
@@ -92,6 +130,22 @@ func loadDocs() {
 	docsJSON := os.Getenv("docs_json")
 
 	json.Unmarshal([]byte(docsJSON), &gDocuments)
+}
+
+// docByID - Search the in-memory document database for specified doc
+func docByID(docID string) *Document {
+
+	var returnDoc *Document
+
+	// Poor-man's search
+	for i := range gDocuments {
+		if gDocuments[i].ID == docID {
+			returnDoc = &gDocuments[i]
+			break
+		}
+	}
+
+	return returnDoc
 }
 
 // This is our in-memory database of documents that this tenant provides
@@ -114,7 +168,7 @@ func main() {
 	//
 	router.HandleFunc("/docs", docsHandler).Methods("GET")
 	router.HandleFunc("/docs/{docId}", docHandler).Methods("GET")
-	router.HandleFunc("/OAS", oasHandler).Methods("GET")
+	router.HandleFunc("/docs/{docId}/content", fetchDocHandler).Methods("GET")
 
 	//
 	// Configure our server
