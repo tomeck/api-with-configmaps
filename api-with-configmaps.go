@@ -89,7 +89,7 @@ func oasHandler(w http.ResponseWriter, r *http.Request) {
 func loadDocs() {
 
 	// Fetch array of documents from ENV (which came from ConfigMap)
-	docsJSON := os.Getenv("DOCS_JSON")
+	docsJSON := os.Getenv("docs_json")
 
 	json.Unmarshal([]byte(docsJSON), &gDocuments)
 }
