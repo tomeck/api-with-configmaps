@@ -12,6 +12,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Document - Structure to hold a document read from config and/or Provider API
+type Document struct {
+	ID     string `json:"id"`
+	Title  string `json:"title"`
+	Type   string `json:"type"`
+	Format string `json:"format"`
+	URI    string `json:"URI"`
+	Tags   string `json:"tags"`
+}
+
 // docHandler Fetch a single document from this tenant
 func docHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inside docHandler")
@@ -26,28 +36,63 @@ func docHandler(w http.ResponseWriter, r *http.Request) {
 // docsHandler Get a list of all available documents from this tenant
 func docsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inside docsHandler")
+
+	// Fetch array of documents from ENV (which came from ConfigMap)
+	//docsJSON := os.Getenv("DOCS_JSON")
+
+	/* Here's code if we need to treat the JSON as such
+	var documents []Document
+	json.Unmarshal([]byte(docsJSON), &documents)
+
+	// log.Println("Doc1", documents[0])
+	// log.Println("Doc2", documents[1])
+	js, err := json.Marshal(profile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	*/
+
+	// Marshal the global in-memory database of documebts
+	js, err := json.Marshal(gDocuments)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(js))
 }
 
 // docsHandler Fetch the URI of the OpenAPISpec for this tenant
 func oasHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Inside oasHandler")
 
-	log.Println("some_var", os.Getenv("some_var"))
-	log.Println("example_prop_2", os.Getenv("example_prop_2"))
-	log.Println("foo", os.Getenv("foo"))
-	log.Println("bar", os.Getenv("bar"))
+	// // log.Println("some_var", os.Getenv("some_var"))
+	// // log.Println("example_prop_2", os.Getenv("example_prop_2"))
+	// // log.Println("foo", os.Getenv("foo"))
+	// // log.Println("bar", os.Getenv("bar"))
 
-	var jsonmap map[string]string
-
-	x := os.Getenv("DOCS_JSON")
-
-	// Unmarshal or Decode the JSON to the interface.
-	json.Unmarshal([]byte(x), &jsonmap)
-	log.Println("Doc1", jsonmap["doc1"])
-	log.Println("Doc2", jsonmap["doc2"])
+	// var jsonmap map[string]interface{}
 }
 
+func loadDocs() {
+
+	// Fetch array of documents from ENV (which came from ConfigMap)
+	docsJSON := os.Getenv("DOCS_JSON")
+
+	json.Unmarshal([]byte(docsJSON), &gDocuments)
+}
+
+// This is our in-memory database of documents that this tenant provides
+var gDocuments []Document
+
 func main() {
+
+	//
+	// Load our Document database
+	//
+	loadDocs()
 
 	//
 	// Create our router
