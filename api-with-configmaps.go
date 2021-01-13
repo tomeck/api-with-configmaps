@@ -154,7 +154,7 @@ var gDocuments []Document
 func main() {
 
 	// JTE TODO remove - this is for testing webhook to kickoff build
-	log.Println("Starting....[v0.0.9]")
+	log.Println("Starting....[v0.1.0]")
 
 	//
 	// Load our Document database
